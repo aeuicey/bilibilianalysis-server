@@ -1,80 +1,125 @@
-# BiliAnalysis
+# BiliAnalysis Server
 
-[![Stars](https://img.shields.io/github/stars/mmyo456/BiliAnalysis?style=flat-square)](https://github.com/mmyo456/BiliAnalysis/stargazers)
-[![License](https://img.shields.io/github/license/mmyo456/BiliAnalysis?style=flat-square)](https://github.com/mmyo456/BiliAnalysis/blob/main/LICENSE)
-[![Release](https://img.shields.io/github/v/release/mmyo456/BiliAnalysis?style=flat-square)](https://github.com/mmyo456/BiliAnalysis/releases/latest)
+BiliAnalysis 的服务器端部署版本 —— 提供 B 站视频/直播 CDN 直链解析 API。
 
-**轻量 · 简洁 · 开源 · VRChat?**
-
-获取哔哩哔哩视频和直播直链的油猴脚本与浏览器扩展。
+解析 B 站 API 后，自动将 BCache 型（`cn-*.bilivideo.com`）和 UPOS 型（`upos-sz-estg*`）CDN 域名替换为 **Mirror 型优质 CDN**（阿里云/腾讯云/华为云/百度云），以获得更稳定快速的体验。
 
 ## 功能特性
 
-- 支持视频和直播间解析
-- 提供本地解析和云端解析
-- 极为方便的操作方式
+- **视频解析**：支持 BV 号、AV 号、指定分 P 的 B 站视频
+- **直播解析**：B 站直播间实时流地址获取
+- **优质 CDN 升级**：自动将 BCache/UPOS/MCDN 升级为 Mirror CDN（阿里云/腾讯云/华为云/百度云）
+- **缓存机制**：10 分钟 TTL，减少对 B 站 API 的重复请求
+- **健康检查**：`/health` 端点返回服务状态
 
-## 快速安装
+## 快速开始
 
-1. 安装用户脚本管理器：
-    - 推荐：[Tampermonkey](https://www.tampermonkey.net)
-2. **基于 Chrome / Chromium 内核浏览器：**
-    1. 务必开启 “扩展程序” 管理中的 **“开发者模式”**[^1]
-    2. 务必开启 “扩展程序” 管理中脚本管理器扩展的 **“允许运行用户脚本”**
-    3. 具体可参考 [Tampermonkey 官方指引](https://www.tampermonkey.net/faq.php#Q209)
-3. 刷新页面后，插件即可生效
-4. 必要时，重启浏览器
+```bash
+# 安装依赖
+npm install
 
-[^1]: [Chrome 切换到 Manifest V3后，使用问题](https://github.com/maboloshi/github-chinese/issues/234)
+# 启动服务 (默认 3000 端口)
+npm start
 
-# 版本选择
+# 自定义端口
+PORT=8080 npm start
+```
 
-| 脚本 | GitHub | 国内镜像 |
-| :--- | :--- | :--- |
-| 稳定版 (推荐) | [安装](https://raw.githubusercontent.com/mmyo456/BiliAnalysis/main/BiliAnalysis-main.user.js) | [安装](https://i.ouo.chat/jsd/gh/mmyo456/BiliAnalysis@main/BiliAnalysis-main.user.js) |
-| 开发版 | [安装](https://raw.githubusercontent.com/mmyo456/BiliAnalysis/main/BiliAnalysis-dev.user.js) | [安装](https://i.ouo.chat/jsd/gh/mmyo456/BiliAnalysis@main/BiliAnalysis-dev.user.js) |
+## API 使用
 
-## 使用方法
+### 视频解析
 
-将鼠标悬停在部分视频封面图
+```
+GET /?url=<B站视频链接>
+```
 
-视频播放页左上角
+**示例：**
 
-选择"视频解析"即可获取直链。
+| 格式 | URL |
+|------|-----|
+| BV 号 | `GET /?url=https://www.bilibili.com/video/BV1GJ411x7h7` |
+| AV 号 | `GET /?url=https://www.bilibili.com/video/av170001` |
+| 指定分 P | `GET /?url=https://www.bilibili.com/video/BV1xx411c7mD?p=2` |
+| 直播 | `GET /?url=https://live.bilibili.com/6` |
 
-## 关于本地视频解析域名替换
+**响应：** HTTP 302 重定向至 B 站 CDN 直链地址。
 
-由于公开世界有URL白名单限制，可参考以下链接文章填入觉得适合你的CDN
+### 健康检查
 
-[常见bili CDN列表总结](https://www.ouo.chat/posts/default/bili_cdn)
+```
+GET /health
+```
 
-## 设置菜单
+```json
+{
+  "status": "ok",
+  "uptime": 1234.5
+}
+```
 
-如图展示
+## 架构
 
-<img src="./img/QQ_1774397459744.png" width="400"> 
+```
+请求 → Express → resolveRawUrl(B站API) → mirror-cdn.js(升级到镜像CDN) → cache.js(TTL 10分钟) → 302重定向
+```
 
-> **重要提示**：云解析依赖公共服务器，请勿滥用。如在 VRChat 世界或网站中使用，请保留项目信息。
-> 
-## 欢迎打赏
+### CDN 升级策略
 
-伴随着人传人，越来越多人发现了项目，也伴随着我们的云服务资产费用正在持续增高，如果觉得有帮助，欢迎 [赞助支持](https://www.ouo.chat/sponsor)。
+参考 [Bilibili-Evolved#3234](https://github.com/the1812/Bilibili-Evolved/issues/3234#issuecomment-1504764774) 中的 B 站 CDN 分类：
 
-# 贡献和致谢
+| CDN 类型 | 特征 | 质量 | 处理 |
+|----------|------|------|------|
+| Mirror 型 | `upos-sz-mirror*` / 阿里云/腾讯云/华为云/百度云 | ⭐⭐⭐ 最优 | **保持不变** |
+| BCache 型 | `cn-*.bilivideo.com` / 自建机房 | ⭐⭐ 因地区而异 | **升级到 Mirror** |
+| UPOS 型 | `upos-sz-estg*` / 对象存储 | ⭐⭐ 需回源 | **升级到 Mirror** |
+| MCDN 型 | 含 `mcdn` 或 `IP:Port` / P2P | ⭐ 极不稳定 | **升级到 Mirror** 或代理 |
+| 免流型 | `*-tf-*.bilivideo.com` | — | **保持不变** |
 
-- [ouo.chat](https://ouo.chat/) - 提供云端解析服务资源
-- [BiliBili-JX](https://github.com/gujimy/BiliBili-JX) - 提供的代码参考
+### 核心模块
 
-  
-### 特别感谢下开发者的贡献：  
-<a href="https://github.com/mmyo456/BiliAnalysis/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=mmyo456/BiliAnalysis" />
-</a>
+| 文件 | 职责 |
+|------|------|
+| `server.js` | Express 入口，路由处理，缓存管理 |
+| `src/bilibili.js` | B 站 API 调用：AV/BV 转换、CID 获取、视频/直播流 URL 解析 |
+| `src/mirror-cdn.js` | Mirror CDN 节点列表 + 域名升级策略 |
+| `src/cache.js` | 10 分钟 TTL 内存缓存 |
+
+## 部署
+
+### 直接运行
+
+```bash
+npm start
+```
+
+### Docker
+
+```bash
+docker build -t bilibilianalysis-server .
+docker run -d -p 3000:3000 bilibilianalysis-server
+```
+
+### Nginx 反代
+
+```nginx
+location / {
+    proxy_pass http://127.0.0.1:3000;
+    proxy_set_header Host $host;
+}
+```
+
+## 借鉴与致谢
+
+本项目参考了以下优秀项目和技术资料：
+
+| 项目 | 说明 | 许可证 |
+|------|------|--------|
+| [BiliAnalysis](https://github.com/mmyo456/BiliAnalysis) | 原版 B 站直链解析油猴脚本。本项目中的 AV/BV 转换算法、B 站 API 调用方式（`pagelist`、`playurl`、`getRoomPlayInfo`）均参考自该项目 | [GPL-3.0](https://github.com/mmyo456/BiliAnalysis/blob/main/LICENSE) |
+| [Bilibili-Evolved#3234](https://github.com/the1812/Bilibili-Evolved/issues/3234#issuecomment-1504764774) | B 站 CDN 类型分类（Mirror/BCache/UPOS/MCDN）及优质 CDN 替换策略。本项目 Mirror CDN 节点列表及升级策略均参考自该讨论 | — |
+| [BiliBili-JX](https://github.com/gujimy/BiliBili-JX) | B 站解析代码参考 | — |
 
 ## 许可证
 
-[GPL-3.0 License](https://github.com/mmyo456/BiliAnalysis/blob/main/LICENSE)
+[GPL-3.0 License](LICENSE)
 
-## Star History
-
-[![Star History Chart](https://api.star-history.com/svg?repos=mmyo456/BiliAnalysis&type=Date)](https://star-history.com/#mmyo456/BiliAnalysis&Date)
+本项目继承自 [BiliAnalysis](https://github.com/mmyo456/BiliAnalysis) 的 GPL-3.0 许可证。

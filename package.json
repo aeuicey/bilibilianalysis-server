@@ -1,0 +1,14 @@
+{
+  "name": "bilibilianalysis-server",
+  "version": "1.0.0",
+  "description": "BiliAnalysis Server - Bilibili video CDN redirect API with cache",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "dependencies": {
+    "express": "^5.1.0"
+  },
+  "license": "GPL-3.0"
+}
