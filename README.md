@@ -1,4 +1,6 @@
 # BiliAnalysis Server
+<img width="2279" height="1280" alt="650769ce7ca8f01416f7ca67aaabc4c6" src="https://github.com/user-attachments/assets/0b00b210-0d6b-46ec-aa59-caeb07d50ef4" />
+
 
 BiliAnalysis 的服务器端部署版本 —— 提供 B 站视频/直播 CDN 直链解析 API。
 
