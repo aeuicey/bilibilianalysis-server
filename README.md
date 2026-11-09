@@ -96,10 +96,37 @@ npm start
 
 ### Docker
 
+本地构建：
+
 ```bash
 docker build -t bilibilianalysis-server .
 docker run -d -p 3000:3000 bilibilianalysis-server
 ```
+
+### GitHub Packages（GHCR 预构建镜像，推荐）
+
+main 分支的每次提交都会由 GitHub Actions 自动构建并推送镜像到
+[GHCR](https://github.com/aeuicey/bilibilianalysis-server/pkgs/container/bilibilianalysis-server)，
+服务器无需拉源码即可更新：
+
+```bash
+docker run -d --name bilibilianalysis-server --restart=unless-stopped \
+  -p 3000:3000 \
+  ghcr.io/aeuicey/bilibilianalysis-server:latest
+```
+
+更新到最新版本：
+
+```bash
+docker pull ghcr.io/aeuicey/bilibilianalysis-server:latest
+docker rm -f bilibilianalysis-server
+docker run -d --name bilibilianalysis-server --restart=unless-stopped \
+  -p 3000:3000 \
+  ghcr.io/aeuicey/bilibilianalysis-server:latest
+```
+
+> 镜像包默认是私有的，公开拉取需在 Packages 设置中将可见性改为 Public；
+> 保持私有则先在服务器执行 `docker login ghcr.io -u aeuicey`（用有 read:packages 权限的 Token）。
 
 ### Nginx 反代
 
