@@ -125,8 +125,9 @@ docker run -d --name bilibilianalysis-server --restart=unless-stopped \
   ghcr.io/aeuicey/bilibilianalysis-server:latest
 ```
 
-> 镜像包默认是私有的，公开拉取需在 Packages 设置中将可见性改为 Public；
-> 保持私有则先在服务器执行 `docker login ghcr.io -u aeuicey`（用有 read:packages 权限的 Token）。
+> 当前镜像包为 Public，可直接匿名 `docker pull`，无需 `docker login`。
+> 若服务器网络访问 ghcr.io 不稳定，可通过 GHCR 加速域名拉取后重打标签，
+> 例如 `docker pull <加速域名>/aeuicey/bilibilianalysis-server:latest`。
 
 ### Nginx 反代
 
