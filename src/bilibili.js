@@ -3,8 +3,6 @@ const MAX_AID = 1n << 51n
 const BASE = 58n
 const BV_DATA = 'FcwAPNKTMug3GV5Lj7EJnHpWsx4tb8haYeviqBz6rkCy12mUSDQX9RdoZf'
 
-const { upgradeCdnHostname } = require('./mirror-cdn')
-
 function av2bv(av) {
   const aid = av.startsWith('av') ? av.slice(2) : av
   const bytes = ['B', 'V', '1', '0', '0', '0', '0', '0', '0', '0', '0', '0']
@@ -112,14 +110,17 @@ async function fetchLiveUrl(roomId) {
   throw new Error('Cannot get live stream URL from response')
 }
 
+// 返回 B 站下发的原始 CDN 地址及链接类型。
+// 直播流签名与域名绑定，替换成 mirror 节点会被边缘以 959 拒绝，因此直播链接
+// 必须原样返回；视频点播签名不绑定域名，由路由层每次请求现选 mirror 节点。
 async function resolveRawUrl(targetUrl) {
   if (targetUrl.includes('live.bilibili.com')) {
     const roomId = extractLiveRoomId(targetUrl)
     if (!roomId) {
       throw new Error('Cannot find live room ID')
     }
-    const rawUrl = await fetchLiveUrl(roomId)
-    return upgradeCdnHostname(rawUrl)
+    const url = await fetchLiveUrl(roomId)
+    return { type: 'live', url }
   }
 
   if (targetUrl.includes('bilibili.com')) {
@@ -132,8 +133,8 @@ async function resolveRawUrl(targetUrl) {
       throw new Error(`Page ${page} not found`)
     }
     const cid = pageList[page - 1].cid
-    const rawUrl = await fetchVideoUrl(bvid, cid)
-    return upgradeCdnHostname(rawUrl)
+    const url = await fetchVideoUrl(bvid, cid)
+    return { type: 'video', url }
   }
 
   throw new Error('Unsupported URL format')
